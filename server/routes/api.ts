@@ -1,5 +1,5 @@
 import express from "express";
-import swapiController from "../controllers/swapiController.ts";
+import openaiController from "../controllers/openaiController.ts";
 import userController from "../controllers/userController.ts";
 import sessionController from "../controllers/sessionController.ts";
 
@@ -8,11 +8,12 @@ const apiRouter = express.Router(); // creates a mini Express app for routing
 // ADD STARTER DATA REQUEST ROUTE HANDLER HERE
 //GET req if req path matches '/api/' 
 
+// FIGURE OUT MIDDLEWARE FLOW WITH TEAM
 
 // ADD GET ROUTE HANDLER HERE
 apiRouter.get(
   "/",
-  swapiController.getAllAnime,
+  openaiController.getAllAnime,
   (_req, res) => {
     return res.status(200).json({ getAnime: res.locals.getAnime });
   }
@@ -21,7 +22,7 @@ apiRouter.get(
 // http://localhost:3000/api/genre
 apiRouter.get(
   "/genre",
-  swapiController.getByGenre,
+  openaiController.getByGenre,
   (req, res) => {
     return res.status(200).json({ animeGenre: res.locals.animeGenre });
   }

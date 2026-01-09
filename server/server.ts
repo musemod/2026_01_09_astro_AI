@@ -3,13 +3,14 @@ import express, { Request, Response, NextFunction } from "express";
 import apiRouter from "./routes/api";
 import oauthRouter from "./routes/oauth";
 
-import dotenv from "dotenv";
+// import dotenv from "dotenv";
+import 'dotenv/config';
 import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
 
 
 
-dotenv.config(); // process.env
+// dotenv.config(); // process.env
 
 const PORT = 3000;
 
@@ -23,13 +24,12 @@ const app = express();
 // add teammates as database admin under Database & Network Access (need to expand left-side menu)
 // give each teammate username and password URI
 // put MONGO_URI=<uri connection string> inside .env file
-// MONGO_URI=mongodb+srv://<username>:<password>@cluster0.lfloktr.mongodb.net/?appName=Cluster0
 const mongoURI : any = process.env.MONGO_URI;
 
 // mongoose.connect(mongoURI);
 mongoose.connect(mongoURI, {
   // sets the name of the DB that our collections are part of
-  dbName: 'animeUsers'
+  dbName: 'astroUsers'
 })
   .then(() => console.log('Connected to Mongo DB.')) // check to verify connected to DB in .then clause
   .catch(err => console.log(err));
@@ -49,9 +49,9 @@ const clientPath = path.resolve(import.meta.dirname, "../client");
 app.use("/", express.static(clientPath));
 
 // set up routes, from most specific to least specific
-// app.use("/api/genre", apiRouter);
 
 //  Use api router for routes starting with /api
+
 app.use("/api", apiRouter);
 //http://localhost:3000/api
 // inside of api.ts file, "/" is same as "http://localhost:3000/api"
