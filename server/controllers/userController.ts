@@ -17,14 +17,37 @@ const userController: UserController = {
 
   /* createUser - create and save new User in db. */
   createUser: async (req: Request, res: Response, next: NextFunction) => {
-    const { username, password } = req.body;
+    const {
+      username,
+      birthdate,
+      birthtime,
+      birthplace,
+      current_location,
+      match_preference,
+    } = req.body;
+
+    if (!username || !birthdate || !birthplace || !birthtime) {
+      return next({
+        log: "Missing required fields",
+        status: 400,
+        message: {
+          err: "Username, birthdate, birthplace, and birthtime are required",
+        },
+      });
+    }
 
     try {
       // OPTION 1: using create() method
       // Mongoose middleware under the hood will automatically run .pre method (see userModel.ts) before saving. No need to create new instance, then save as 2 separate steps
       const newUser = await User.create({
+        // returns newUser object with _id automatically created
         username: username,
-        password: password,
+        // password: password,
+        birthdate: birthdate, // Mongoose will ensure Date object due to schema
+        birthtime: birthtime,
+        birthplace: birthplace,
+        current_location: current_location,
+        match_preference: match_preference,
       });
 
       // OPTION 2: using new keyword to create new User instance, then save(). Same as Option 1, except 2 separate steps
@@ -37,8 +60,11 @@ const userController: UserController = {
       // await newUser.save();
 
       // store user ID
-      res.locals.userId = newUser._id;
+      res.locals.userId = newUser._id; // grab the _id and save to res.locals
       res.locals.username = newUser.username;
+      res.locals.birthdate = newUser.birthdate;
+      res.locals.birthtime = newUser.birthtime;
+      res.locals.birthplace = newUser.birthplace;
 
       console.log("new user created with _id: ", newUser._id);
 
@@ -78,98 +104,98 @@ const userController: UserController = {
     }
   },
 
-  addToFavorites: async (req: Request, res: Response, next: NextFunction) => {
-    if (!req.cookies.ssid) return next();
+  // addToFavorites: async (req: Request, res: Response, next: NextFunction) => {
+  //   if (!req.cookies.ssid) return next();
 
-    const ssid = req.cookies.ssid;
+  //   const ssid = req.cookies.ssid;
 
-    try {
-      // check if already existing user, IF the userSchema didn't already require unique
-      console.log("checking for userId that matches ssid: ", ssid);
+  //   try {
+  //     // check if already existing user, IF the userSchema didn't already require unique
+  //     console.log("checking for userId that matches ssid: ", ssid);
 
-      const userExist = await User.findById(ssid);
+  //     const userExist = await User.findById(ssid);
 
-      if (!userExist) {
-        console.log("User not found with ssid: ", ssid);
-        // clear invalid cookie
-        console.log("clearing invalid cookie ssid");
-        res.clearCookie("ssid");
-        return next();
-      }
+  //     if (!userExist) {
+  //       console.log("User not found with ssid: ", ssid);
+  //       // clear invalid cookie
+  //       console.log("clearing invalid cookie ssid");
+  //       res.clearCookie("ssid");
+  //       return next();
+  //     }
 
-      console.log("User found:", userExist.username, userExist._id);
+  //     console.log("User found:", userExist.username, userExist._id);
 
-      const { title, ranking, genres, image, synopsis } = req.body;
+  //     const { title, ranking, genres, image, synopsis } = req.body;
 
-      if (!title || !ranking || !synopsis) {
-        return res.status(400).json({ err: "missing anime data" });
-      }
+  //     if (!title || !ranking || !synopsis) {
+  //       return res.status(400).json({ err: "missing anime data" });
+  //     }
 
-      // checks if anime already in favs
-      // some() array method tests whether at least 1 element in an array passes a condition
-      const isAlreadyFav = userExist.favorites.some(
-        (fav) => fav.title === title && fav.ranking === ranking
-      );
+  //     // checks if anime already in favs
+  //     // some() array method tests whether at least 1 element in an array passes a condition
+  //     const isAlreadyFav = userExist.favorites.some(
+  //       (fav) => fav.title === title && fav.ranking === ranking
+  //     );
 
-      if (isAlreadyFav) console.log("already in favs", userExist.favorites);
+  //     if (isAlreadyFav) console.log("already in favs", userExist.favorites);
 
-      if (!isAlreadyFav) {
-        console.log("currently adding to favs");
+  //     if (!isAlreadyFav) {
+  //       console.log("currently adding to favs");
 
-        const newFav = {
-          title,
-          ranking,
-          genres,
-          image: image || "",
-          synopsis,
-        };
+  //       const newFav = {
+  //         title,
+  //         ranking,
+  //         genres,
+  //         image: image || "",
+  //         synopsis,
+  //       };
 
-        // add to userfavs
-        userExist.favorites.push(newFav);
+  //       // add to userfavs
+  //       userExist.favorites.push(newFav);
 
-        await userExist.save();
+  //       await userExist.save();
 
-        res.locals.userFavs = userExist.favorites;
+  //       res.locals.userFavs = userExist.favorites;
 
-        console.log("fav added ", userExist.username, userExist.favorites);
-      }
+  //       console.log("fav added ", userExist.username, userExist.favorites);
+  //     }
 
-      return next();
-    } catch (err) {
-      return next(err);
-    }
-  },
+  //     return next();
+  //   } catch (err) {
+  //     return next(err);
+  //   }
+  // },
 
-  getFavorites: async (req: Request, res: Response, next: NextFunction) => {
-    if (!req.cookies.ssid) return next();
+  // getFavorites: async (req: Request, res: Response, next: NextFunction) => {
+  //   if (!req.cookies.ssid) return next();
 
-    const ssid = req.cookies.ssid;
+  //   const ssid = req.cookies.ssid;
 
-    try {
-      // check if already existing user, IF the userSchema didn't already require unique
-      console.log("checking for userId that matches ssid: ", ssid);
+  //   try {
+  //     // check if already existing user, IF the userSchema didn't already require unique
+  //     console.log("checking for userId that matches ssid: ", ssid);
 
-      const userExist = await User.findById(ssid);
+  //     const userExist = await User.findById(ssid);
 
-      if (!userExist) {
-        console.log("User not found with ssid: ", ssid);
-        // clear invalid cookie
-        console.log("clearing invalid cookie ssid");
-        res.clearCookie("ssid");
-        return next();
-      }
+  //     if (!userExist) {
+  //       console.log("User not found with ssid: ", ssid);
+  //       // clear invalid cookie
+  //       console.log("clearing invalid cookie ssid");
+  //       res.clearCookie("ssid");
+  //       return next();
+  //     }
 
-      console.log("User found:", userExist.username, userExist._id);
+  //     console.log("User found:", userExist.username, userExist._id);
 
-      res.locals.userFavs = userExist.favorites;
+  //     res.locals.userFavs = userExist.favorites;
 
-      console.log("favorites found ", userExist.favorites);
+  //     console.log("favorites found ", userExist.favorites);
 
-      return next();
-    } catch (err) {
-      return next(err);
-    }
-  },
+  //     return next();
+  //   } catch (err) {
+  //     return next(err);
+  //   }
+  // },
 };
 
 export default userController;

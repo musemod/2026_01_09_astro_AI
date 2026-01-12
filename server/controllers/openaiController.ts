@@ -1,50 +1,59 @@
 import { Request, Response, NextFunction } from "express";
-// import { RequestHandler } from "express";
 import OpenAI from 'openai';
-// import 'dotenv/config';
+import 'dotenv/config';
+
+import { ServerError } from "../types";
 // npm install openai
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY as string
 });
 
-
 // note: 2 DIFFERENT response objs here: 1 response from api to server, 1 res from server to client
 // add OPEN_API_KEY to .env file
-// 
 
 export default {
 
-queryOpenAIChat: async (_req: Request, res: Response, next: NextFunction) => {
-  const { userQuery } = res.locals;
-  if (!userQuery) {
+generateAstroData: async (req: Request, res: Response, next: NextFunction) => {
+  const { userId, birthdate, birthplace, birthtime } = res.locals;
+
+  if (!userId) {
     const error: ServerError = {
-      log: 'queryOpenAIChat did not receive a user query',
+      log: 'no userId found',
       status: 500,
-      message: { err: 'An error occurred before querying OpenAI' },
+      message: { err: 'user must be created before generating astro data' },
     };
     return next(error);
   }
-  
 
-    const prompt = `
-  You are a helpful movie recommender.
+  const systemPrompt = `
+You are an expert astrocartographer. Given a person's birth information:
+- Date of birth: ${birthdate}
+- Birth place: ${birthplace}
+- Birth time: ${birthtime}
 
-  User Request: "${userQuery}"
+Extract and return ONLY this information in JSON format:
+{
+  "zodiac_sign": "exact zodiac sign",
+  "age": "calculate age in years",
+  "best_locations": ["location1", "location2", "location3", "location4", "location5"]
+}
 
-  Here are relevant movies (You MUST pick exactly one of these titles): 
-  
+list of valid zodiac signs: ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
 
-  Rules:
-- Recommend exactly ONE movie and it MUST be one of the listed titles.
-- Explain why in 1-2 sentences.
+Rules:
+1. Calculate age based on current date ${new Date().toISOString().split('T')[0]}
+2. List exactly 5 best locations based on user's birth data for astrocartography
+3. Use proper location names (city, country format)
+4. Make sure zodiac sign is valid, according to list above.
+4. No additional text, only JSON
 `.trim();
 
 
     try {
       const resp = await openai.responses.create({
         model: 'gpt-4o-mini',
-        input: prompt,
+        input: systemPrompt,
       });
 
       if (!resp.output_text){
@@ -56,7 +65,8 @@ queryOpenAIChat: async (_req: Request, res: Response, next: NextFunction) => {
         return next(error);
       }
 
-      res.locals.movieRecommendation = resp.output_text;
+      // store raw response for parsing onto res.locals
+      res.locals.rawOpenAIResp = resp.output_text;
       return next();
 
     } catch (err) {

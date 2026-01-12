@@ -6,20 +6,22 @@ export interface ErrorInfo {
   err: unknown;
 }
 
-export interface AnimeData {
-  title: string;
-  ranking: number;
-  genres: string[];
-  image: string;
-  synopsis: string;
+
+export interface ServerError {
+  log: string;
+  status: number;
+  message: { err: string };
 }
+
+
+// export interface AstroData {
+
+// }
 
 export interface UserController {
   getAllUsers: RequestHandler;
   createUser: RequestHandler;
   verifyUser: RequestHandler;
-  addToFavorites: RequestHandler;
-  getFavorites: RequestHandler;
 }
 
 export interface CookieController {

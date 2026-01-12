@@ -1,36 +1,85 @@
 import mongoose from "mongoose";
 // import {Schema, Document } from 'mongoose'; // make sure to import Document type from mongoose (unless already imported from line above)? yes
 import bcrypt from "bcryptjs";
-import { AnimeData } from "../types";
 
 // extend Document type from Mongoose
 export interface IUser extends Document {
   username: string;
-  password: string;
-  favorites: AnimeData[];
+  password?: string;
+
+  // birth info
+  birthdate: Date;
+  birthtime?: string;
+  birthplace?: string;
+  current_location?: string;
+  
+  // generated astro data
+  zodiac_sign?: string;
+  age?: number;
+  best_locations: string[]; // array of strings
+  
+  // matches (array of user IDs or match objects)
+  match_preference: string;
+  matches: mongoose.Types.ObjectId[]; // store other user IDs
+  
+  // timestamps
+  created_at: Date;
+  last_updated?: Date;
+
 }
 
 const Schema = mongoose.Schema;
 const SALT_WORK_FACTOR = 10;
 
-// create AnimeData schema separately, though ended up not really using
-const animeDataSchema = new Schema({
-  title: { type: String, required: true },
-  ranking: { type: Number, required: true },
-  genres: [{ type: String }],
-  image: { type: String, required: true },
-  synopsis: { type: String },
-});
-
 // create userSchema
 const userSchema = new Schema<IUser>({
   username: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  favorites: {
-    type: [animeDataSchema], // use the separate schema here
-    required: false, // this makes it optional
-    default: [], // set up empty array as default - good practice for arrays
+  password: { type: String, required: false },
+
+ // birth info
+  birthdate: {type: Date, required: [true, 'Birthdate required'] },
+  birthtime: { type: String, required: true, default: 'unknown' },
+  birthplace: {type: String, required: true},
+  current_location: {type: String, required: false},
+  
+  // generated astro data
+  zodiac_sign: {type: String, required: false, trim: true },
+  age: { 
+    type: Number,
+    min: 0,
+    max: 120,
+    required: false
   },
+  best_locations: { // MIGHT change later to array of objects [ { city: country}, { city: country} ] 
+    type: [String], // array of strings,
+    required: false,
+    default: [], // init empty arr
+    validate: {
+      validator: function(locations: string[]) {
+        // limit to 5 locations
+        return locations.length <= 5;
+      },
+      message: 'Max 5 locations allowed'
+    }
+  },
+  
+  // matches - store refs to other users
+  match_preference: {type: String, required: false, enum: ['man', 'woman', 'any'], default: 'any'},
+  matches: [{
+    type: Schema.Types.ObjectId,
+    required: false,
+    ref: 'User',
+    default: []
+  }],
+  
+  // timestamps
+  created_at: { 
+    type: Date, 
+    default: Date.now 
+  },
+  last_updated: { 
+    type: Date 
+  }
 });
 
 userSchema.pre("save", async function (next) {
@@ -49,6 +98,3 @@ userSchema.pre("save", async function (next) {
 
 export default mongoose.model("User", userSchema);
 
-// no need to call mongoose.model() meethod on animeDataSchema
-// animeDataSchema is a subdocument schema, not a standalone collection
-// so it's embedded directly within userSchema via type: [animeDataSchema]

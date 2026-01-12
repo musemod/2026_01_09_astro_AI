@@ -3,6 +3,8 @@ import express, { Request, Response, NextFunction } from "express";
 import apiRouter from "./routes/api";
 import oauthRouter from "./routes/oauth";
 
+import { ServerError } from "./types";
+
 // import dotenv from "dotenv";
 import 'dotenv/config';
 import cookieParser from 'cookie-parser';
@@ -75,14 +77,9 @@ app.use((_, res) => {
   return res.status(404).send("404: page not found"); 
 });
 
-type CustomError = {
-  log?: string;
-  status?: number;
-  message?: any;
-};
 
 // 4 params for error handler middleware (vs. 3 for regular middleware)
-app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
+app.use((err: ServerError, req: Request, res: Response, next: NextFunction) => {
   const defaultErr = {
     log: "Express error handler caught unknown middleware error",
     status: 500,
