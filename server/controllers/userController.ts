@@ -18,12 +18,7 @@ const userController: UserController = {
   /* createUser - create and save new User in db. */
   createUser: async (req: Request, res: Response, next: NextFunction) => {
     const {
-      username,
-      birthdate,
-      birthtime,
-      birthplace,
-      current_location,
-      match_preference,
+      username, birthdate, birthtime, birthplace, current_location, match_preference,
     } = req.body;
 
     if (!username || !birthdate || !birthplace || !birthtime) {
@@ -36,14 +31,14 @@ const userController: UserController = {
       });
     }
 
-  // convert any date format to Date object
-  const parseBirthdate = (dateStr: string): Date => {
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) {
-      throw new Error('Invalid date format');
-    }
-    return date;
-  };
+    // convert any date format to Date object
+    const parseBirthdate = (dateStr: string): Date => {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        throw new Error('Invalid date format');
+      }
+      return date;
+    };
 
     try {
       // OPTION 1: using create() method
@@ -60,14 +55,11 @@ const userController: UserController = {
       });
 
       // OPTION 2: using new keyword to create new User instance, then save(). Same as Option 1, except 2 separate steps
-
       // const newUser = new User({
       //   username: username,
       //   password: password,
       // });
-
       // await newUser.save();
-
       // store user ID
       res.locals.userId = newUser._id; // grab the _id and save to res.locals
       res.locals.username = newUser.username;
@@ -83,6 +75,35 @@ const userController: UserController = {
     }
   },
 
+  // patch update
+  //   updateUser: async (req: Request, res: Response, next: NextFunction) => {
+  //  try {   
+  //   const {userId} = res.locals; // get userId from res.locals
+  //   const astroData = res.locals.astroData; // take clean astroData from res.locals
+  //   if (!userId) {
+  //     return next( {
+  //       log: 'no userId found',
+  //       status: 400,
+  //       message: { err: 'user id required'}
+  //     })
+  //   }
+  //   const {
+  //       zodiac_sign,
+  //       age,
+  //       best_locations,
+  //     } = res.locals.astroData;
+  //     const updatedUser = await User.findOneAndUpdate(
+  //       {username: }
+  //       {zodiac_sign: zodiac_sign},
+  //       {age: age},
+  //       {best_location: zodiac_sign},
+  //       {new: true, runValidators: true}
+  //     )
+  //     return next();
+  //     } catch (err) {
+  //       return next(err);
+  //     }
+  //   }
   /* verifyUser - Obtain username and pw from req body, locate appropriate user in db, authenticate submitted pw against pw stored in db. */
   verifyUser: async (req: Request, res: Response, next: NextFunction) => {
     const { username, password } = req.body;
@@ -112,99 +133,7 @@ const userController: UserController = {
       return next(err);
     }
   },
-
-  // addToFavorites: async (req: Request, res: Response, next: NextFunction) => {
-  //   if (!req.cookies.ssid) return next();
-
-  //   const ssid = req.cookies.ssid;
-
-  //   try {
-  //     // check if already existing user, IF the userSchema didn't already require unique
-  //     console.log("checking for userId that matches ssid: ", ssid);
-
-  //     const userExist = await User.findById(ssid);
-
-  //     if (!userExist) {
-  //       console.log("User not found with ssid: ", ssid);
-  //       // clear invalid cookie
-  //       console.log("clearing invalid cookie ssid");
-  //       res.clearCookie("ssid");
-  //       return next();
-  //     }
-
-  //     console.log("User found:", userExist.username, userExist._id);
-
-  //     const { title, ranking, genres, image, synopsis } = req.body;
-
-  //     if (!title || !ranking || !synopsis) {
-  //       return res.status(400).json({ err: "missing anime data" });
-  //     }
-
-  //     // checks if anime already in favs
-  //     // some() array method tests whether at least 1 element in an array passes a condition
-  //     const isAlreadyFav = userExist.favorites.some(
-  //       (fav) => fav.title === title && fav.ranking === ranking
-  //     );
-
-  //     if (isAlreadyFav) console.log("already in favs", userExist.favorites);
-
-  //     if (!isAlreadyFav) {
-  //       console.log("currently adding to favs");
-
-  //       const newFav = {
-  //         title,
-  //         ranking,
-  //         genres,
-  //         image: image || "",
-  //         synopsis,
-  //       };
-
-  //       // add to userfavs
-  //       userExist.favorites.push(newFav);
-
-  //       await userExist.save();
-
-  //       res.locals.userFavs = userExist.favorites;
-
-  //       console.log("fav added ", userExist.username, userExist.favorites);
-  //     }
-
-  //     return next();
-  //   } catch (err) {
-  //     return next(err);
-  //   }
-  // },
-
-  // getFavorites: async (req: Request, res: Response, next: NextFunction) => {
-  //   if (!req.cookies.ssid) return next();
-
-  //   const ssid = req.cookies.ssid;
-
-  //   try {
-  //     // check if already existing user, IF the userSchema didn't already require unique
-  //     console.log("checking for userId that matches ssid: ", ssid);
-
-  //     const userExist = await User.findById(ssid);
-
-  //     if (!userExist) {
-  //       console.log("User not found with ssid: ", ssid);
-  //       // clear invalid cookie
-  //       console.log("clearing invalid cookie ssid");
-  //       res.clearCookie("ssid");
-  //       return next();
-  //     }
-
-  //     console.log("User found:", userExist.username, userExist._id);
-
-  //     res.locals.userFavs = userExist.favorites;
-
-  //     console.log("favorites found ", userExist.favorites);
-
-  //     return next();
-  //   } catch (err) {
-  //     return next(err);
-  //   }
-  // },
+  updateUser: undefined
 };
 
 export default userController;

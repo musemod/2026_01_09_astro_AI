@@ -40,7 +40,7 @@ const userSchema = new Schema<IUser>({
   birthdate: {type: Date, required: [true, 'Birthdate required'] },
   birthtime: { type: String, required: true, default: 'unknown' },
   birthplace: {type: String, required: true},
-  current_location: {type: String, required: false},
+  current_location: {type: String, required: true, default: 'not given'},
   
   // generated astro data
   zodiac_sign: {type: String, required: false, trim: true },

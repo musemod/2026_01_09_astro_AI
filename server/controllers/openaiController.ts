@@ -43,10 +43,12 @@ list of valid zodiac signs: ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virg
 
 Rules:
 1. Calculate age based on current date ${new Date().toISOString().split('T')[0]}
-2. List exactly 5 best locations based on user's birth data for astrocartography
-3. Use proper location names (city, country format)
-4. Make sure zodiac sign is valid, according to list above.
-4. No additional text, only JSON
+2. Calculate astrology chart, based on birth details
+3. Carefully and manually read the astrology chart.
+4. Based on user astrology chart, calculate exactly 5 best locations for astrocartography, giving preference to sun, jupiter, and venus lines
+5. Use proper location names (city, country format)
+6. Make sure zodiac sign is valid, according to list above.
+7. No additional text, only JSON
 `.trim();
 
 
@@ -66,6 +68,8 @@ Rules:
       }
 
       // store raw response for parsing onto res.locals
+      console.log('rawOpenAIResp: ', resp.output_text)
+
       res.locals.rawOpenAIResp = resp.output_text;
       return next();
 

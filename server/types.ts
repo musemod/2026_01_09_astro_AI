@@ -6,7 +6,6 @@ export interface ErrorInfo {
   err: unknown;
 }
 
-
 export interface ServerError {
   log: string;
   status: number;
@@ -14,14 +13,17 @@ export interface ServerError {
 }
 
 
-// export interface AstroData {
-
-// }
 
 export interface UserController {
   getAllUsers: RequestHandler;
   createUser: RequestHandler;
   verifyUser: RequestHandler;
+  updateUser: RequestHandler;
+}
+
+export interface DataController {
+  parseRawData: RequestHandler;
+  validateAstroData: RequestHandler;
 }
 
 export interface CookieController {
