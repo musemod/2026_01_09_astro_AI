@@ -1,198 +1,192 @@
-import { useEffect, useMemo, useState } from 'react'
+import React, { useState } from "react";
 
+export default function BirthMatchForm({ onResult }) {
+  const [username, setUsername] = useState("");
 
-export default function BirthMatchForm ({ onResult }) {
-   const [username, setUsername] = useState("")
-   const [birthdate, setBirthdate] = useState("");
-   const [birthtime, setBirthtime] = useState("")
-   const [unknownTime, setUnknownTime] = useState(false);
+  // Backend enum is: 'man' | 'woman' | 'any'
+  const [matchPreference, setMatchPreference] = useState("any");
+  const [birthdate, setBirthdate] = useState("");
 
-   const [birthplaceText. setBirthplaceText] = useState("");
-   const [birthplaceSelected, setBirthplaceSelected] = useState(null);
+  // Send as "HH:MM" from <input type="time"> 
+  const [birthtime, setBirthtime] = useState("");
+  const [birthtimeUnknown, setBirthtimeUnknown] = useState(true);
 
-   const [currentLocation, setCurrentLocation] = useState("");
-   const [matchPreference, setMatchPreference] = useState("woman")
+  const [birthplace, setBirthplace] = useState("");
+  const [currentLocation, setCurrentLocation] = useState("");
 
-    //Autocomplete
-    const [placeSuggestions, setPlaceSuggestions] = useState([]);
-    const [showPlaceDropdown, setShowPlaceDropdown] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-
-    //UX
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [errorMessage, setErrorMessage] = useState("");
-
-    const canSubmit = useMemo(() => {
-        if (!username.trim() return false);
-        if (!birthdate) return false;
-        if (!unknownTime && !birthtime) return false;
-        if (!birthplaceText.trim()) return false;
-        if (!currentLocation.trim()) return false
-        return true
-    }, [username, birthdate, unknownTime, birthtime, birthplaceText, currentLocation]);
-    
-
-    //Birthplace autocomplete
-    async function getLocationSuggestions(query) {
-        const q = query.trim();
-        if (!q) return [];
-
-        //openStreet map
-        const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&q=${encodeURIComponent(
-            q
-        )}`;
-    }
-
-    const res = await fetch(url, {
-        headers: {"Accept-Language": "en",
-        },
-    });
-
-    if (!res.ok) return [];
-
-    const data = await res.json();
-    return (Array.isArray(data) ? data : []).map((item) => ({
-        label: item.display_name,
-    }))
-}
-
-
-
-useEffect(() => {
-    const q = birthplaceText.trim();
-    if (!q) {
-        setPlaceSuggestions([]);
-        setShowPlaceDropdown(false);
-        return;
-    }
-
-    setShowBirthplaceDropDropdown(true);
-
-    const time = setTimeout(async () => {
-        try {
-            const suggestions = await getLocationSuggestions(q);
-            setBirthplaceSuggestions(suggestions);
-        } catch (error) {
-            //later
-        }
-    }, 250);
-
-    return () => clearTimeout(time);
-}, [birthplaceText])
-
-
-//current location auto complete too
-useEffect (() => {
-    const q = currentLocation.trim();
-    if (!q) {
-        setCurrentLocationSuggestions([]);
-        setShowCurrentLocationDropdown(false);
-        return;
-    }
-
-    setShowCurrentLocationDropdown(true);
-
-    const time = setTimeout(async () => {
-        try {
-            const suggestions = await getLocationSuggestions(q);
-            setCurrentLocationSuggestions(suggestions);
-        } catch (error) {
-            //later
-        }
-    }, 250);
-
-    return () => clearTimeout(time);
-}, [currentLocation])
-
-
-function pickCurrentLocation(place) {
-    setCurrentLocation(place.label);
-    setCurrentLocationSuggestions([]);
-    setShowCurrentLocationDropdown(false);
-}
-
-
-async function handleSubmit(e){
+  async function handleSubmit(e) {
     e.preventDefault();
-    setErrorMessage("")
+    setErrorMsg("");
 
+    // Basic validation (match backend requirements)
+    if (!username.trim()) return setErrorMsg("Please enter your name.");
+    if (!birthdate) return setErrorMsg("Please enter your birthdate.");
+    if (!birthplace.trim()) return setErrorMsg("Please enter your birthplace.");
+    if (!currentLocation.trim())
+      return setErrorMsg("Please enter your current location.");
 
-    if (!canSubmit) {
-        setErrorMessage("Please fill out all required fields.")
-        return;
+    // Backend requires birthtime to exist:
+    // - if unknown => "unknown"
+    // - else => "HH:MM"
+    const normalizedBirthtime = birthtimeUnknown ? "unknown" : birthtime;
+
+    if (!birthtimeUnknown && !/^\d{2}:\d{2}$/.test(normalizedBirthtime || "")) {
+      return setErrorMsg("Birth time must be a valid time (HH:MM) or select Unknown.");
     }
 
-    setIsSubmitting(true);
+    
+    const payload = {
+      username: username.trim(),
+      birthdate, // "YYYY-MM-DD"
+      birthtime: normalizedBirthtime, 
+      birthplace: birthplace.trim(),
+      current_location: currentLocation.trim(),
+      match_preference: matchPreference, 
+    };
 
     try {
-        const payload = {
-            username: username.trim(),
-            birthdate,
-            birthtime: unknownTime ? "unknown" : birthtime,
-            birthplace: birthplaceText.trim(),
-            current_location: currentLocation.trim(),
-            match_preference: matchPreference,
-        };
+      setLoading(true);
 
-        const saveRes = await fetch("/api/createUser", {
-            method: "POST",
-            headers: { "Content-Type": "application/json"},
-            body: JSON.stringify(payload),
-        })
+      const res = await fetch("/api/createUser", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-        const saveData = await saveRes.json().catch(() => ({}));
-        if (!saveRes.ok) {
-            setErrorMessage(saveData?.message || "Could not save user info.");
-            return;
-        }
+      // backend returns { err: "..." } on errors
+      const text = await res.text();
+      let data = null;
 
-        const matchRes = await fetch("/api/match", {
-            method: "POST",
-            header: { "Content-Type": "application/json"},
-            body: JSON.stringify(payload),
-        });
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        ///
+      }
 
-        const matchData = await matchRes.json().catch(() => ({}));
-        if (!matchRes.ok) {
-            setErrorMessage(matchData?.message || " Could not get match result")
-            return;
-        }
+      if (!res.ok) {
+        const msg = data?.err || data?.error || text || "Request failed.";
+        throw new Error(msg);
+      }
 
-        onResult(matchData);
-    } catch () {
-        setErrorMessage("Network Error. PLease try again");
+      // Success response shape:
+      onResult?.(data);
+    } catch (err) {
+      setErrorMsg(err?.message || "Request failed. Check server console.");
     } finally {
-        setIsSubmitting(false)
+      setLoading(false);
     }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="form">
+      {errorMsg && <div className="errorBanner">{errorMsg}</div>}
+
+      <label className="label">
+        Name (initial or nickname)
+        <input
+          className="input"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="e.g., karl"
+        />
+      </label>
+
+      <div className="label">
+        I prefer
+        <div className="pillRow">
+          <label className="pill">
+            <input
+              type="radio"
+              name="matchPreference"
+              checked={matchPreference === "man"}
+              onChange={() => setMatchPreference("man")}
+            />
+            Men
+          </label>
+
+          <label className="pill">
+            <input
+              type="radio"
+              name="matchPreference"
+              checked={matchPreference === "woman"}
+              onChange={() => setMatchPreference("woman")}
+            />
+            Women
+          </label>
+
+          <label className="pill">
+            <input
+              type="radio"
+              name="matchPreference"
+              checked={matchPreference === "any"}
+              onChange={() => setMatchPreference("any")}
+            />
+            Any
+          </label>
+        </div>
+      </div>
+
+      <div className="row2">
+        <label className="label">
+          Birthdate
+          <input
+            className="input"
+            type="date"
+            value={birthdate}
+            onChange={(e) => setBirthdate(e.target.value)}
+          />
+        </label>
+
+        <label className="label">
+          Birth time
+          <input
+            className="input"
+            type="time"
+            value={birthtime}
+            onChange={(e) => setBirthtime(e.target.value)}
+            disabled={birthtimeUnknown}
+          />
+          <div className="checkboxRow">
+            <input
+              type="checkbox"
+              checked={birthtimeUnknown}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setBirthtimeUnknown(checked);
+                if (checked) setBirthtime("");
+              }}
+            />
+            <span>Unknown</span>
+          </div>
+        </label>
+      </div>
+
+      <label className="label">
+        Birthplace (city, country)
+        <input
+          className="input"
+          value={birthplace}
+          onChange={(e) => setBirthplace(e.target.value)}
+          placeholder="e.g., Accra, Ghana"
+        />
+      </label>
+
+      <label className="label">
+        Current location (city, country)
+        <input
+          className="input"
+          value={currentLocation}
+          onChange={(e) => setCurrentLocation(e.target.value)}
+          placeholder="e.g., Rochester, United States"
+        />
+      </label>
+
+      <button className="submitBtn" type="submit" disabled={loading}>
+        {loading ? "Sending..." : "Send"}
+      </button>
+    </form>
+  );
 }
-
-return (
-    <div className="card">
-        <header className="cardHeader">
-            <div>
-                <h1 className="title">Discover your zodiac match</h1>
-                <p className="subtitle">One submission. Accurate Result.</p>
-            </div>
-            <div className="chip">MERN</div>
-        </header>
-
-
-        <form className="form" onSubmit={handleSubmit}>
-            <div className="field">
-                <label className="label" htmlFor="username">Name</label>
-                <input 
-                    id="username"
-                    className="input"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="e.g., Karl"
-                />
-            </div>
-    </div>
-
-
-
-)
-
-
-
